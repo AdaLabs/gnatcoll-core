@@ -20,7 +20,7 @@
 -- <http://www.gnu.org/licenses/>.                                          --
 --                                                                          --
 ------------------------------------------------------------------------------
-
+with "rts";
 with "gpr";
 
 project GnatColl is
@@ -59,19 +59,19 @@ project GnatColl is
       when "windows" | "osx" =>
          --  On MacOS and Windows all object are relocatable by default
          --  thus the same object directory can be used
-         for Object_Dir use "obj/gnatcoll/all";
+         for Object_Dir use "obj/gnatcoll/" & RTS.RTS_Type & "all";
       when "unix" =>
          --  On Unix static-pic and relocatable shared the same objects
          case Library_Type is
             when "relocatable" | "static-pic" =>
-               for Object_Dir use "obj/gnatcoll/pic";
+               for Object_Dir use "obj/gnatcoll/" & RTS.RTS_Type & "/pic";
             when "static" =>
-               for Object_Dir use "obj/gnatcoll/static";
+               for Object_Dir use "obj/gnatcoll/" & RTS.RTS_Type & "/static";
          end case;
    end case;
 
    for Library_Dir
-      use "lib/gnatcoll/" & Project'Library_Kind;
+      use "lib/gnatcoll/" & RTS.RTS_Type & "-" & Project'Library_Kind;
    for Library_Name    use Name;
 
    for Languages use ("Ada", "C");
