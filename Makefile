@@ -52,6 +52,7 @@
 CAT := cat
 ECHO  := echo
 WHICH := which
+DESTDIR?=
 
 # check for out-of-tree build
 SOURCE_DIR := $(dir $(MAKEFILE_LIST))
@@ -114,7 +115,7 @@ GPRBUILD_OPTIONS=
 BUILDER=gprbuild -p -m $(GTARGET) $(RBD) -j$(PROCESSORS) $(GPR_VARS) \
 	$(GPRBUILD_OPTIONS)
 INSTALLER=gprinstall -p -f $(GTARGET) $(GPR_VARS) \
-	$(RBD) --sources-subdir=include/gnatcoll --prefix=$(prefix)$(integrated_install)
+	$(RBD) --sources-subdir=include/gnatcoll --prefix=$(DESTDIR)$(prefix)$(integrated_install)
 CLEANER=gprclean -q $(RBD) $(GTARGET)
 UNINSTALLER=$(INSTALLER) -p -f --install-name=gnatcoll --uninstall
 
@@ -123,37 +124,62 @@ UNINSTALLER=$(INSTALLER) -p -f --install-name=gnatcoll --uninstall
 #########
 
 build: $(LIBRARY_TYPES:%=build-%)
+	make build-rts-adalabs-static
 
 build-%:
 	$(BUILDER) -XLIBRARY_TYPE=$* -XXMLADA_BUILD=$* -XGPR_BUILD=$* \
-		$(GPR_VARS) $(GNATCOLL_GPR)
+		$(GPR_VARS) $(GNATCOLL_GPR) -XRTS_TYPE=default
+
+build-rts-adalabs-%:
+	$(BUILDER) -XLIBRARY_TYPE=$* -XXMLADA_BUILD=$* -XGPR_BUILD=$* \
+		$(GPR_VARS) $(GNATCOLL_GPR) -XRTS_TYPE=adalabs --RTS=adalabs
+
 
 ###########
 # Install #
 ###########
 
 uninstall:
-ifneq (,$(wildcard $(prefix)$(integrated_install)/share/gpr/manifests/gnatcoll))
+ifneq (,$(wildcard $(DESTDIR)$(prefix)$(integrated_install)/share/gpr/manifests/gnatcoll))
 	$(UNINSTALLER) $(GNATCOLL_GPR)
 endif
 
 install: uninstall $(LIBRARY_TYPES:%=install-%)
+	make install-rts-adalabs-static
+	mkdir -p $(DESTDIR)$(prefix)/bin
+	sed -i 's/with \"gpr\";/with \"gpr\";\nwith \"rts\";/' $(DESTDIR)$(prefix)/share/gpr/gnatcoll.gpr
+	sed -i 's/BUILD : BUILD_KIND := external(\"GNATCOLL_CORE_BUILD\", external(\"GNATCOLL_BUILD\", external(\"LIBRARY_TYPE\", \"static\")));/BUILD : BUILD_KIND := external(\"GNATCOLL_CORE_BUILD\", external(\"GNATCOLL_BUILD\", \"static\"));/' $(DESTDIR)$(prefix)/share/gpr/gnatcoll.gpr
+	sed -i 's/for Languages use (\"Ada\", \"C\");/for Languages use (\"Ada\", \"C\");\n   case RTS.RTS_Type is\n      when \"adalabs\" =>\n         BUILD := \"rts-adalabs\";\n      when others =>\n         null;\n   end case;/'    $(DESTDIR)$(prefix)/share/gpr/gnatcoll.gpr
 
 install-%:
 	$(INSTALLER) -XLIBRARY_TYPE=$* -XXMLADA_BUILD=$* -XGPR_BUILD=$* \
 		--build-name=$* $(GPR_VARS) \
 		--build-var=LIBRARY_TYPE --build-var=GNATCOLL_BUILD \
-		--build-var=GNATCOLL_CORE_BUILD $(GNATCOLL_GPR)
+		--build-var=GNATCOLL_CORE_BUILD $(GNATCOLL_GPR) -XRTS_TYPE=default
+
+install-rts-adalabs-%:
+	$(INSTALLER) -XLIBRARY_TYPE=$* -XXMLADA_BUILD=$* -XGPR_BUILD=$* \
+		--build-name=rts-adalabs $(GPR_VARS) \
+		--build-var=LIBRARY_TYPE --build-var=GNATCOLL_BUILD \
+		--build-var=GNATCOLL_CORE_BUILD $(GNATCOLL_GPR) -XRTS_TYPE=adalabs --RTS=adalabs
+
 
 ###########
 # Cleanup #
 ###########
 
 clean: $(LIBRARY_TYPES:%=clean-%)
+	make clean-rts-adalabs-static
 
 clean-%:
 	-$(CLEANER) -XLIBRARY_TYPE=$* -XXMLADA_BUILD=$* -XGPR_BUILD=$* \
 		$(GPR_VARS) $(GNATCOLL_GPR)
+
+clean-rts-adalabs-%:
+	-$(CLEANER) -XLIBRARY_TYPE=$* -XXMLADA_BUILD=$* -XGPR_BUILD=$* \
+		$(GPR_VARS) $(GNATCOLL_GPR) -XRTS_TYPE=adalabs --RTS=adalabs
+
+
 
 #########
 # setup #
@@ -162,7 +188,7 @@ clean-%:
 .SILENT: setup
 
 setup:
-	$(ECHO) "prefix=$(prefix)" > makefile.setup
+	$(ECHO) "prefix=$(DESTDIR)$(prefix)" > makefile.setup
 	$(ECHO) "ENABLE_SHARED=$(ENABLE_SHARED)" >> makefile.setup
 	$(ECHO) "INTEGRATED=$(INTEGRATED)" >> makefile.setup
 	$(ECHO) "BUILD=$(BUILD)" >> makefile.setup
