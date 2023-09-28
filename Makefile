@@ -93,7 +93,7 @@ all: build
 GTARGET=--target=$(NORMALIZED_TARGET)
 
 ifeq ($(ENABLE_SHARED), yes)
-   LIBRARY_TYPES=static relocatable static-pic
+   LIBRARY_TYPES=static relocatable
 else
    LIBRARY_TYPES=static
 endif
