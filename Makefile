@@ -130,9 +130,9 @@ install:
 ###########
 
 clean:
-	$(PYTHON) $(SOURCE_DIR)/projects/gnatcoll_projects.gpr.py clean --add-gpr-path=local-install/share/gpr
-	$(PYTHON) $(SOURCE_DIR)/core/gnatcoll_core.gpr.py clean --add-gpr-path=local-install/share/gpr
-	$(PYTHON) $(SOURCE_DIR)/minimal/gnatcoll_minimal.gpr.py clean --add-gpr-path=local-install/share/gpr
+	$(PYTHON) $(SOURCE_DIR)/projects/gnatcoll_projects.gpr.py clean
+	$(PYTHON) $(SOURCE_DIR)/core/gnatcoll_core.gpr.py clean
+	$(PYTHON) $(SOURCE_DIR)/minimal/gnatcoll_minimal.gpr.py clean
 
 # Let gprbuild handle parallelisation. In general, we don't support parallel
 # runs in this Makefile, as concurrent gprinstall processes may crash.
