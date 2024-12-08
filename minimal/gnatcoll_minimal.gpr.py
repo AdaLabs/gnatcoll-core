@@ -46,7 +46,7 @@ class GNATCollMinimal(BuilderApp):
         else:
             gpr.variants_var = "LIBRARY_TYPE"
             if args.enable_shared == "yes":
-                gpr.variants_values = ["static", "relocatable", "static-pic"]
+                gpr.variants_values = ["static", "relocatable"]
             else:
                 gpr.variants_values = ["static"]
 

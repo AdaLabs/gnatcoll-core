@@ -22,6 +22,8 @@
 ------------------------------------------------------------------------------
 with "gnatcoll_core";
 with "gnatcoll_projects";
+with "rts";
+with "gpr";
 
 abstract project GNATCOLL is
  

@@ -49,6 +49,7 @@
 WHICH := which
 SED := sed
 PYTHON :=
+DESTDIR?=
 
 # check for out-of-tree build
 SOURCE_DIR := $(dir $(MAKEFILE_LIST))
