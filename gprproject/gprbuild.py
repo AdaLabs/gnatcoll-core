@@ -29,6 +29,7 @@ class GPRTool:
         gpr_paths: list[str] | None = None,
         add_prefix_to_gpr_paths: bool = False,
         gpr_opts: list[str] | None = None,
+        rts: str = "default",
     ) -> None:
         """Instantiate gpr tools instance.
 
@@ -41,6 +42,7 @@ class GPRTool:
         :param gnatcov: if True add gnatcov instrumentation
         :param symcc: if True add symcc instrumentation
         :param gpr_opts: arguments passed to gprbuild
+        :param rts: Ada runtime
         """
         project_full_path = os.path.abspath(project_file)
         self.project_file = os.path.basename(project_full_path)
@@ -49,6 +51,7 @@ class GPRTool:
         self.object_dir = (
             os.path.abspath(object_dir) if object_dir is not None else os.getcwd()
         )
+        self.rts = rts
         if variables:
             self.variables = {k: v for k, v in variables.items()}
         else:
@@ -63,7 +66,7 @@ class GPRTool:
         self.original_target = target
 
         # Compute canonical target
-        gprconfig_cmd = [which("gprconfig"), "--config=ada", "--mi-show-compilers"]
+        gprconfig_cmd = [which("gprconfig"), f"--config=ada,,{self.rts}", "--mi-show-compilers"]
         if self.original_target:
             gprconfig_cmd.append(f"--target={self.original_target}")
         gprconfig_output = self.capture(gprconfig_cmd)
@@ -175,6 +178,9 @@ class GPRTool:
             for option in self.gpr_opts:
                cmd.append(option)
 
+        if self.rts != "default":
+            cmd.append(f"--RTS={self.rts}")
+
         if cmd_name == "gprinstall":
             if self.integrated:
                 final_prefix = os.path.join(self.prefix, self.target)
@@ -196,7 +202,18 @@ class GPRTool:
                 if cmd_name == "gprinstall":
                     final_cmd += [
                         f"--build-name={variants_value}",
-                        f"--build-var={self.variants_var}",
+                        f"--build-var=BUILD",
+                    ]
+                if self.rts == "default":
+                    final_cmd += [
+                        f"-XBUILD={variants_value}",
+                    ]
+            if cmd_name == "gprinstall":
+                if self.rts != "default":
+                    final_cmd.append(f"-XRTS_TYPE={self.rts}")
+                    final_cmd += [
+                        f"--build-name=rts-{self.rts}",
+                        f"--build-var=BUILD",
                     ]
             print(final_cmd)
             status = run(final_cmd, **kwargs).returncode
@@ -236,7 +253,11 @@ class GPRTool:
 
     def save(self):
         json_file = os.path.join(self.object_dir, self.project_name + ".json")
-        data = {
+        data = {}
+        if os.path.exists(json_file):
+            with open(json_file) as fd:
+                data = json.load(fd)
+        section = {
             "project_file": os.path.join(self.source_dir, self.project_file),
             "object_dir": self.object_dir,
             "target": self.original_target,
@@ -251,11 +272,12 @@ class GPRTool:
             "gpr_paths": self.gpr_paths,
             "gpr_opts": self.gpr_opts,
         }
+        data[self.rts] = section
         with open(json_file, "w") as fd:
             json.dump(data, fd, indent=2)
 
     @classmethod
-    def load(cls, project_file: str, object_dir: str | None = None) -> GPRTool:
+    def load(cls, project_file: str, rts: str, object_dir: str | None = None) -> GPRTool:
         object_dir = (
             os.path.abspath(object_dir) if object_dir is not None else os.getcwd()
         )
@@ -264,21 +286,22 @@ class GPRTool:
 
         with open(json_file) as fd:
             data = json.load(fd)
-
+        section = data[rts]
         return GPRTool(
-            project_file=data["project_file"],
+            project_file=section["project_file"],
             object_dir=object_dir,
-            target=data["target"],
-            integrated=data["integrated"],
-            variables=data["variables"],
-            jobs=data["jobs"],
-            variants_var=data["variants_var"],
-            variants_values=data["variants_values"],
-            gnatcov=data["gnatcov"],
-            symcc=data["symcc"],
-            prefix=data["prefix"],
-            gpr_paths=data["gpr_paths"],
-            gpr_opts=data["gpr_opts"],
+            target=section["target"],
+            integrated=section["integrated"],
+            variables=section["variables"],
+            jobs=section["jobs"],
+            variants_var=section["variants_var"],
+            variants_values=section["variants_values"],
+            gnatcov=section["gnatcov"],
+            symcc=section["symcc"],
+            prefix=section["prefix"],
+            gpr_paths=section["gpr_paths"],
+            gpr_opts=section["gpr_opts"],
+            rts=rts,
         )
 
 

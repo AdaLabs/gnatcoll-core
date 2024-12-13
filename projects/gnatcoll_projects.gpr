@@ -24,6 +24,7 @@
 with "gpr";
 with "gnatcoll_core";
 with "config/gnatcoll_projects_constants.gpr";
+with "rts";
 
 library project GNATCOLL_Projects is
 
@@ -66,14 +67,14 @@ library project GNATCOLL_Projects is
          --  On Unix static-pic and relocatable shared the same objects
          case Library_Type is
             when "relocatable" | "static-pic" =>
-               for Object_Dir use Object_Root & "obj/gnatcoll_projects/pic";
+               for Object_Dir use Object_Root & "obj/gnatcoll_projects/" & RTS.RTS_Type & "pic";
             when "static" =>
-               for Object_Dir use Object_Root & "obj/gnatcoll_projects/static";
+               for Object_Dir use Object_Root & "obj/gnatcoll_projects/" & RTS.RTS_Type & "static";
          end case;
    end case;
 
    for Library_Dir
-      use Object_Root & "lib/gnatcoll_projects/" & Project'Library_Kind;
+      use Object_Root & "lib/gnatcoll_projects/" & RTS.RTS_Type & "/" & Project'Library_Kind;
    for Library_Name    use Name;
 
    for Languages use ("Ada");

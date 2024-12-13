@@ -32,6 +32,11 @@ class BuilderApp:
             help="pass remaining arguments to gprbuild",
         )
         self.build_cmd.add_argument(
+            "--rts",
+            default="default",
+            help="Ada runtime",
+        )
+        self.build_cmd.add_argument(
             "--add-gpr-path", help="prepend a path to look for GPR files"
         )
         self.build_cmd.add_argument(
@@ -96,6 +101,11 @@ class BuilderApp:
             nargs=argparse.REMAINDER,
             help="pass remaining arguments to gprclean",
         )
+        self.clean_cmd.add_argument(
+            "--rts",
+            default="default",
+            help="Ada runtime",
+        )
         self.clean_cmd.set_defaults(command=self.clean)
 
         # Install command
@@ -106,6 +116,11 @@ class BuilderApp:
             default=[],
             nargs=argparse.REMAINDER,
             help="pass remaining arguments to gprinstall",
+        )
+        self.install_cmd.add_argument(
+            "--rts",
+            default="default",
+            help="Ada runtime",
         )
         self.install_cmd.add_argument(
             "--prefix", help="installation prefix", default=None
@@ -119,6 +134,11 @@ class BuilderApp:
             default=[],
             nargs=argparse.REMAINDER,
             help="pass remaining arguments to gpruninstall",
+        )
+        self.uninstall_cmd.add_argument(
+            "--rts",
+            default="default",
+            help="Ada runtime",
         )
         self.uninstall_cmd.add_argument(
             "--prefix", help="un-installation prefix", default=None
@@ -163,6 +183,7 @@ class BuilderApp:
             gpr_paths=args.add_gpr_path,
             add_prefix_to_gpr_paths=args.prefix is not None,
             gpr_opts=args.gpr_opts,
+            rts=args.rts,
         )
         self.adjust_config(gpr, args)
 
@@ -182,17 +203,17 @@ class BuilderApp:
             return 0
 
     def clean(self, args):
-        gpr = GPRTool.load(self.project_file)
+        gpr = GPRTool.load(self.project_file,rts=args.rts)
         return gpr.clean([])
 
     def install(self, args):
-        gpr = GPRTool.load(self.project_file)
+        gpr = GPRTool.load(self.project_file,rts=args.rts)
         if args.prefix:
             gpr.prefix = os.path.abspath(args.prefix)
         return gpr.install([])
 
     def uninstall(self, args):
-        gpr = GPRTool.load(self.project_file)
+        gpr = GPRTool.load(self.project_file,rts=args.rts)
         if args.prefix:
             gpr.prefix = os.path.abspath(args.prefix)
         return gpr.uninstall([])

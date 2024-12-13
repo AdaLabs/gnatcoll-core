@@ -21,6 +21,7 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 with "config/gnatcoll_minimal_constants.gpr";
+with "rts";
 
 library project GNATCOLL_Minimal is
 
@@ -63,14 +64,14 @@ library project GNATCOLL_Minimal is
          --  On Unix static-pic and relocatable shared the same objects
          case Library_Type is
             when "relocatable" | "static-pic" =>
-               for Object_Dir use Object_Root & "obj/gnatcoll_minimal/pic";
+               for Object_Dir use Object_Root & "obj/gnatcoll_minimal/" & RTS.RTS_Type & "/pic";
             when "static" =>
-               for Object_Dir use Object_Root & "obj/gnatcoll_minimal/static";
+               for Object_Dir use Object_Root & "obj/gnatcoll_minimal/" & RTS.RTS_Type & "/static";
          end case;
    end case;
 
    for Library_Dir
-      use Object_Root & "lib/gnatcoll_core/" & Project'Library_Kind;
+      use Object_Root & "lib/gnatcoll_core/" & RTS.RTS_Type & "/" & Project'Library_Kind;
 
    for Library_Name    use Name;
 
