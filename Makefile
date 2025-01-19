@@ -147,6 +147,7 @@ install:
 clean:
 	rm -rf ./$(LOCAL_INSTALL)
 	rm -rf lib obj
+	rm -rf gnatcoll_core.json gnatcoll_minimal.json gnatcoll_projects.json
 
 # Let gprbuild handle parallelisation. In general, we don't support parallel
 # runs in this Makefile, as concurrent gprinstall processes may crash.

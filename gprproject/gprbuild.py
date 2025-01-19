@@ -202,18 +202,18 @@ class GPRTool:
                 if cmd_name == "gprinstall":
                     final_cmd += [
                         f"--build-name={variants_value}",
-                        f"--build-var=BUILD",
+                        f"--build-var=BUILD_TYPE",
                     ]
                 if self.rts == "default":
                     final_cmd += [
-                        f"-XBUILD={variants_value}",
+                        f"-XBUILD_TYPE={variants_value}",
                     ]
             if cmd_name == "gprinstall":
                 if self.rts != "default":
                     final_cmd.append(f"-XRTS_TYPE={self.rts}")
                     final_cmd += [
                         f"--build-name=rts-{self.rts}",
-                        f"--build-var=BUILD",
+                        f"--build-var=BUILD_TYPE",
                     ]
             print(final_cmd)
             status = run(final_cmd, **kwargs).returncode
