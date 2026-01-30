@@ -49,6 +49,7 @@
 WHICH := which
 SED := sed
 PYTHON :=
+DESTDIR?=
 
 # check for out-of-tree build
 SOURCE_DIR := $(dir $(MAKEFILE_LIST))
@@ -94,36 +95,49 @@ ifeq ($(INTEGRATED), yes)
    integrated_install=/$(NORMALIZED_TARGET)
 endif
 
-BUILD_ARGS=--jobs=$(PROCESSORS) \
+LOCAL_INSTALL=local-install
+
+BUILD_ARGS_COMMON=--jobs=$(PROCESSORS) \
  --build=$(BUILD) \
  --target=$(NORMALIZED_TARGET) \
- --prefix=gnatcoll-core-install \
  --install \
+
+BUILD_ARGS_RTS_ADALABS=$(BUILD_ARGS_COMMON) \
+ --rts=adalabs \
+ --prefix=$(LOCAL_INSTALL) \
+ --enable-shared=no \
+ --gpr-opts -XRTS_TYPE=adalabs
+
+BUILD_ARGS=$(BUILD_ARGS_COMMON) \
+ --prefix=$(LOCAL_INSTALL) \
  --enable-shared=$(ENABLE_SHARED)
 
-build:
-	rm -rf gnatcoll-core-install
-	mkdir -p gnatcoll-core-install/share/gpr
+build: clean
+	mkdir -p $(LOCAL_INSTALL)/share/gpr
 
 ifeq ($(GNATCOLL_PROJECTS), yes)
-	$(SED) -e 's/^--  with "gnatcoll_projects"/with "gnatcoll_projects"/g' $(GNATCOLL_GPR) > gnatcoll-core-install/share/gpr/gnatcoll.gpr
+	$(SED) -e 's/^--  with "gnatcoll_projects"/with "gnatcoll_projects"/g' $(GNATCOLL_GPR) > $(LOCAL_INSTALL)/share/gpr/gnatcoll.gpr
 else
-	$(SED) -e 's/^with "gnatcoll_projects"/--  with "gnatcoll_projects"/g' $(GNATCOLL_GPR) > gnatcoll-core-install/share/gpr/gnatcoll.gpr
+	$(SED) -e 's/^with "gnatcoll_projects"/--  with "gnatcoll_projects"/g' $(GNATCOLL_GPR) > $(LOCAL_INSTALL)/share/gpr/gnatcoll.gpr
 endif
 
 	$(PYTHON) $(SOURCE_DIR)/minimal/gnatcoll_minimal.gpr.py build $(INSTR_BUILD_OPTS) $(BUILD_ARGS)
+	$(PYTHON) $(SOURCE_DIR)/minimal/gnatcoll_minimal.gpr.py build $(INSTR_BUILD_OPTS) $(BUILD_ARGS_RTS_ADALABS)
 
 ifeq ($(GNATCOLL_MINIMAL_ONLY), no)
 	$(PYTHON) $(SOURCE_DIR)/core/gnatcoll_core.gpr.py build $(INSTR_BUILD_OPTS) $(BUILD_ARGS)
+	$(PYTHON) $(SOURCE_DIR)/core/gnatcoll_core.gpr.py build $(INSTR_BUILD_OPTS) $(BUILD_ARGS_RTS_ADALABS)
 endif
 
 ifeq ($(GNATCOLL_PROJECTS), yes)
 	$(PYTHON) $(SOURCE_DIR)/projects/gnatcoll_projects.gpr.py build $(INSTR_BUILD_OPTS) $(BUILD_ARGS)
+	$(PYTHON) $(SOURCE_DIR)/projects/gnatcoll_projects.gpr.py build $(INSTR_BUILD_OPTS) $(BUILD_ARGS_RTS_ADALABS)
 endif
 
 install:
-	@echo "Installing gnatcoll into $(prefix)"
-	rsync -av ./gnatcoll-core-install/ $(prefix)$(integrated_install)
+	@echo "Installing gnatcoll into $(DESTDIR)/$(prefix)"
+	mkdir -p $(DESTDIR)/$(prefix)$(integrated_install)/bin
+	rsync -av ./$(LOCAL_INSTALL)/ $(DESTDIR)/$(prefix)$(integrated_install)  
 
 # Documentation
 doc:
@@ -137,7 +151,9 @@ doc:
 ###########
 
 clean:
-	rm -rf gnatcoll-core-install
+	rm -rf ./$(LOCAL_INSTALL)
+	rm -rf lib obj
+	rm -rf gnatcoll_core.json gnatcoll_minimal.json gnatcoll_projects.json
 
 # Let gprbuild handle parallelisation. In general, we don't support parallel
 # runs in this Makefile, as concurrent gprinstall processes may crash.
